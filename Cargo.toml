@@ -16,3 +16,8 @@ thiserror = "1.0"
 
 [dev-dependencies]
 rstest = "0.17.0"
+criterion = "0.4"
+
+[[bench]]
+name = "strategy_benchmarks"
+harness = false

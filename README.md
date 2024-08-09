@@ -61,6 +61,27 @@ pytest python/tests
 python build.py
 ```
 
+### Running benchmarks
+
+```bash
+cargo bench
+```
+
+### Creating a release
+
+1. Update the version in `Cargo.toml`
+2. Commit the changes
+3. Run:
+   ```bash
+   cargo release patch # or minor, or major
+   ```
+
+## Contributing
+
+# TODO:
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct and the process for submitting pull requests.
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
