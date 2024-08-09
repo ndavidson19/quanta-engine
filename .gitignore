@@ -1,0 +1,11 @@
+/target
+**/*.rs.bk
+Cargo.lock
+.env
+*.pyc
+__pycache__
+.pytest_cache
+.venv
+*.so
+*.pyd
+*.dll

@@ -1,0 +1,18 @@
+[package]
+name = "quanta_engine"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "quanta_engine"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.18.3", features = ["extension-module"] }
+serde = { version = "1.0", features = ["derive"] }
+chrono = { version = "0.4", features = ["serde"] }
+serde_json = "1.0"
+thiserror = "1.0"
+
+[dev-dependencies]
+rstest = "0.17.0"
