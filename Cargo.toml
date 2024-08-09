@@ -8,14 +8,18 @@ name = "quanta_engine"
 crate-type = ["cdylib"]
 
 [dependencies]
-pyo3 = { version = "0.18.3", features = ["extension-module"] }
+pyo3 = { version = "0.20", features = ["extension-module"] }
 serde = { version = "1.0", features = ["derive"] }
 chrono = { version = "0.4", features = ["serde"] }
 serde_json = "1.0"
 thiserror = "1.0"
+log = "0.4"
+futures = "0.3"
+pyo3-asyncio = { version = "0.20", features = ["attributes", "async-std-runtime"] }
+async-std = "1.9"
 
 [dev-dependencies]
-rstest = "0.17.0"
+pyo3 = { version = "0.20", features = ["extension-module"] }
 criterion = "0.4"
 
 [[bench]]

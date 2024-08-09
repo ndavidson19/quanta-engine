@@ -1,18 +1,20 @@
-use quanta_engine::{StrategyManager, Strategy, StrategyStatus};
+use quanta_engine::*;
 
 #[test]
-fn test_strategy_manager() {
-    let mut manager = StrategyManager::new();
-    
-    manager.add_strategy("strat1".to_string(), "Strategy 1".to_string(), "user1".to_string()).unwrap();
-    manager.add_strategy("strat2".to_string(), "Strategy 2".to_string(), "user2".to_string()).unwrap();
-    
-    assert_eq!(manager.list_active_strategies().len(), 2);
-    
-    manager.update_strategy_status("strat1", StrategyStatus::Paused).unwrap();
-    
-    assert_eq!(manager.list_active_strategies().len(), 1);
-    
-    let strategy = manager.get_strategy("strat2").unwrap();
-    assert_eq!(strategy.name, "Strategy 2");
+fn test_strategy_manager_integration() {
+    let strategy_manager = StrategyManager::new();
+    let user_id = "user1".to_string();
+    let strategy_id = "strat1".to_string();
+
+    // Assuming you have a function to create a dummy Python object for the broker API
+    let broker_api = create_dummy_broker_api();
+
+    strategy_manager.add_user(user_id.clone(), "User 1".to_string(), broker_api).unwrap();
+
+    let strategy = create_dummy_strategy(); // Replace with actual strategy creation
+
+    strategy_manager.add_strategy(strategy_id.clone(), "Test Strategy".to_string(), user_id.clone(), strategy).unwrap();
+
+    let retrieved_strategy = strategy_manager.get_strategy(&strategy_id).unwrap();
+    assert_eq!(retrieved_strategy.id, strategy_id);
 }

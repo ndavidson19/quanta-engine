@@ -1,95 +1,75 @@
 use pyo3::prelude::*;
-use pyo3::types::PyDateTime;
 use std::collections::HashMap;
-use chrono::{DateTime, Utc};
-
-#[pyclass]
-#[derive(Clone)]
-pub struct Strategy {
-    #[pyo3(get)]
-    pub id: String,
-    #[pyo3(get)]
-    pub name: String,
-    #[pyo3(get)]
-    pub user_id: String,
-    #[pyo3(get)]
-    pub status: StrategyStatus,
-    created_at: i64,
-    updated_at: i64,
-}
-
-#[pymethods]
-impl Strategy {
-    #[new]
-    fn new(id: String, name: String, user_id: String) -> Self {
-        let now = Utc::now().timestamp();
-        Strategy {
-            id,
-            name,
-            user_id,
-            status: StrategyStatus::Active,
-            created_at: now,
-            updated_at: now,
-        }
-    }
-
-    #[getter]
-    fn get_created_at<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDateTime> {
-        PyDateTime::from_timestamp(py, self.created_at as f64, None)
-    }
-
-    #[getter]
-    fn get_updated_at<'py>(&self, py: Python<'py>) -> PyResult<&'py PyDateTime> {
-        PyDateTime::from_timestamp(py, self.updated_at as f64, None)
-    }
-}
-
-#[pyclass]
-#[derive(Clone, Copy)]
-pub enum StrategyStatus {
-    Active,
-    Paused,
-    Stopped,
-}
+use std::sync::{Arc, RwLock};
+use crate::models::user::User;
+use crate::strategy::strategy::{StrategyWrapper, StrategyStatus};
 
 #[pyclass]
 pub struct StrategyManager {
-    strategies: HashMap<String, Strategy>,
+    users: RwLock<HashMap<String, Arc<User>>>,
+    strategies: RwLock<HashMap<String, Arc<StrategyWrapper>>>,
 }
 
 #[pymethods]
 impl StrategyManager {
     #[new]
-    fn new() -> Self {
+    pub fn new() -> Self {
         StrategyManager {
-            strategies: HashMap::new(),
+            users: RwLock::new(HashMap::new()),
+            strategies: RwLock::new(HashMap::new()),
         }
     }
 
-    fn add_strategy(&mut self, id: String, name: String, user_id: String) -> PyResult<()> {
-        let strategy = Strategy::new(id.clone(), name, user_id);
-        self.strategies.insert(id, strategy);
+    pub fn add_user(&self, id: String, name: String, broker_api: PyObject) -> PyResult<()> {
+        let user = Arc::new(User::new(id.clone(), name, broker_api));
+        self.users.write().unwrap().insert(id, user);
         Ok(())
     }
 
-    fn get_strategy(&self, id: &str) -> Option<Strategy> {
-        self.strategies.get(id).cloned()
+    pub fn add_strategy(&self, id: String, name: String, user_id: String, strategy: PyObject) -> PyResult<()> {
+        let users = self.users.read().unwrap();
+        let user = users.get(&user_id).ok_or_else(|| PyErr::new::<pyo3::exceptions::PyValueError, _>("User not found"))?;
+        let wrapper = Arc::new(StrategyWrapper::new(
+            id.clone(),
+            name,
+            user_id,
+            StrategyStatus::Active,
+            strategy,
+            (**user).clone(), // Clone the User inside the Arc
+        ));
+        self.strategies.write().unwrap().insert(id, wrapper);
+        Ok(())
     }
 
-    fn update_strategy_status(&mut self, id: &str, status: StrategyStatus) -> PyResult<()> {
-        if let Some(strategy) = self.strategies.get_mut(id) {
-            strategy.status = status;
-            strategy.updated_at = Utc::now().timestamp();
-            Ok(())
+    pub fn get_strategy(&self, id: &str) -> Option<StrategyWrapper> {
+        self.strategies.read().unwrap().get(id).map(|arc| (**arc).clone())
+    }
+    
+    pub fn update_strategy_status(&self, id: &str, status: StrategyStatus) -> PyResult<()> {
+        let mut strategies = self.strategies.write().unwrap();
+        if let Some(strategy) = strategies.get_mut(id) {
+            if let Some(strategy_mut) = Arc::get_mut(strategy) {
+                strategy_mut.status = status;
+                Ok(())
+            } else {
+                Err(PyErr::new::<pyo3::exceptions::PyRuntimeError, _>("Failed to get mutable reference to strategy"))
+            }
         } else {
-            Err(pyo3::exceptions::PyValueError::new_err("Strategy not found"))
+            Err(PyErr::new::<pyo3::exceptions::PyValueError, _>("Strategy not found"))
         }
     }
 
-    fn list_active_strategies(&self) -> Vec<Strategy> {
-        self.strategies.values()
+    pub fn list_active_strategies(&self) -> Vec<StrategyWrapper> {
+        self.strategies.read().unwrap().values()
             .filter(|s| matches!(s.status, StrategyStatus::Active))
-            .cloned()
+            .map(|arc| (**arc).clone())
+            .collect()
+    }
+
+    pub fn list_user_strategies(&self, user_id: &str) -> Vec<StrategyWrapper> {
+        self.strategies.read().unwrap().values()
+            .filter(|s| s.user_id == user_id)
+            .map(|arc| (**arc).clone())
             .collect()
     }
 }
