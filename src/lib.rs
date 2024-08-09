@@ -40,7 +40,7 @@ fn quanta_engine(py: Python, m: &PyModule) -> PyResult<()> {
 Below are the Rust tests for the Quanta Engine library. These tests cover the creation of orders, validation rules, order validators, and the strategy manager. The tests also include integration tests for the strategy manager.
 TODO: Most of the tests are failing for lack of getter and setter methods. Implement these methods to make the tests pass.
 The Pytest integration tests are implemented and passing so for now this is ok.
-*/
+
 
 #[cfg(test)]
 mod tests {
